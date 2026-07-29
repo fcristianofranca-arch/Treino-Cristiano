@@ -1,0 +1,366 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover" />
+<title>Treino Cristiano</title>
+
+<meta name="apple-mobile-web-app-capable" content="yes" />
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+<meta name="apple-mobile-web-app-title" content="Treino" />
+<meta name="theme-color" content="#0a0a0a" />
+<link rel="apple-touch-icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='180' height='180'%3E%3Crect width='180' height='180' fill='%230a0a0a'/%3E%3Ctext x='90' y='118' font-size='90' font-family='system-ui,sans-serif' font-weight='900' fill='%23e8ff00' text-anchor='middle'%3ETC%3C/text%3E%3C/svg%3E" />
+
+<script crossorigin src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+<script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+
+<style>
+  html, body, #root { margin: 0; padding: 0; background: #0a0a0a; height: 100%; }
+  * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+  body { padding-top: env(safe-area-inset-top); padding-bottom: env(safe-area-inset-bottom); font-family: system-ui, -apple-system, sans-serif; }
+  input[type=number]::-webkit-inner-spin-button,
+  input[type=number]::-webkit-outer-spin-button { -webkit-appearance: none; margin: 0; }
+  ::-webkit-scrollbar { display: none; }
+  #fallback { color: #888; text-align: center; padding: 40px 20px; font-size: 14px; }
+</style>
+</head>
+<body>
+<div id="root"><div id="fallback">Carregando Treino Cristiano…</div></div>
+
+<script>
+window.addEventListener("error", function(e) {
+  var el = document.getElementById("fallback");
+  if (el) el.textContent = "Erro ao carregar: " + e.message;
+});
+</script>
+<script>
+"use strict";
+const { useState, useEffect, useRef } = React;
+const DAYS = [
+    {
+        id: "seg", label: "SEG", full: "Segunda", type: "upper", typeLabel: "UPPER A — FORÇA",
+        objective: "Peito, costas e ombro com carga alta. Força como base para manter massa no cutting.",
+        exercises: [
+            { name: "Supino inclinado halteres 30°", sets: 5, reps: "5–6", highlight: true },
+            { name: "Remada curvada máquina", sets: 4, reps: "6–8", highlight: true },
+            { name: "Smith inclinado baixo", sets: 4, reps: "8" },
+            { name: "Puxada frontal aberta", sets: 4, reps: "6–8" },
+            { name: "Desenvolvimento máquina", sets: 4, reps: "8", highlight: true },
+            { name: "Elevação lateral", sets: 4, reps: "12–15" },
+            { name: "Prancha com peso", sets: 4, reps: "30–45s" },
+        ],
+    },
+    {
+        id: "ter", label: "TER", full: "Terça", type: "legs", typeLabel: "LOWER A — QUAD",
+        objective: "Quadríceps e vasto lateral como foco. Volume alto para gasto calórico máximo.",
+        exercises: [
+            { name: "Extensora unilateral", sets: 4, reps: "12–15" },
+            { name: "Hack squat pés baixos", sets: 5, reps: "8–10", highlight: true },
+            { name: "Leg press fechado", sets: 4, reps: "10–12" },
+            { name: "Afundo smith curto", sets: 3, reps: "10–12" },
+            { name: "Abdutora pesada", sets: 4, reps: "15–20" },
+            { name: "Panturrilha em pé", sets: 5, reps: "12–15" },
+            { name: "Abdominal infra elevação de pernas", sets: 4, reps: "15–20" },
+        ],
+    },
+    {
+        id: "qua", label: "QUA", full: "Quarta", type: "upper", typeLabel: "UPPER B — METABÓLICO",
+        objective: "Segundo estímulo de superiores com foco em pump, volume e gasto calórico. Menos carga, mais qualidade.",
+        exercises: [
+            { name: "Crossover low to high", sets: 4, reps: "15", highlight: true },
+            { name: "Supino inclinado máquina convergente", sets: 3, reps: "12–15", highlight: true },
+            { name: "Crucifixo inclinado cabo", sets: 3, reps: "15" },
+            { name: "Remada unilateral", sets: 4, reps: "12" },
+            { name: "Pulldown unilateral", sets: 3, reps: "12–15" },
+            { name: "Elevação lateral cabo", sets: 5, reps: "15–20" },
+            { name: "Oblíquo cabo em pé", sets: 4, reps: "15–20" },
+            { name: "Rosca direta", sets: 3, reps: "10–12" },
+            { name: "Tríceps corda", sets: 3, reps: "12–15" },
+        ],
+    },
+    {
+        id: "qui", label: "QUI", full: "Quinta", type: "rest", typeLabel: "OFF — RECUPERAÇÃO",
+        objective: "Recuperação ativa. Fundamental para manter performance nos 3 dias seguintes.",
+        rest: true,
+        restItems: ["Caminhada leve — 20–30 min", "Mobilidade de quadril", "Alongamento leve", "Hidratação alta — reduz retenção"],
+    },
+    {
+        id: "sex", label: "SEX", full: "Sexta", type: "legs", typeLabel: "LOWER B — POSTERIOR",
+        objective: "Posterior de coxa, glúteo e panturrilha. Alta demanda metabólica.",
+        exercises: [
+            { name: "Stiff halteres", sets: 5, reps: "8–10", highlight: true },
+            { name: "Mesa flexora", sets: 4, reps: "10–12" },
+            { name: "Flexora unilateral", sets: 3, reps: "12" },
+            { name: "Hip thrust", sets: 4, reps: "8–10", highlight: true },
+            { name: "Leg press alto", sets: 4, reps: "12–15" },
+            { name: "Abdutora", sets: 3, reps: "20" },
+            { name: "Adutora", sets: 3, reps: "15" },
+            { name: "Panturrilha sentado", sets: 4, reps: "15" },
+        ],
+    },
+    {
+        id: "sab", label: "SÁB", full: "Sábado", type: "spec", typeLabel: "ESPECIALIZAÇÃO",
+        objective: "Ombro direto, braços e core pesado. Dia dedicado ao que ficava secundário no PPL.",
+        exercises: [
+            { name: "Desenvolvimento militar smith", sets: 5, reps: "6–8", highlight: true },
+            { name: "Elevação lateral máquina", sets: 4, reps: "12–15" },
+            { name: "Elevação lateral cabo unilateral", sets: 4, reps: "15–20" },
+            { name: "Face pull cabo", sets: 4, reps: "15–20" },
+            { name: "Rosca scott máquina", sets: 4, reps: "8–10", highlight: true },
+            { name: "Rosca martelo cabo", sets: 3, reps: "10–12" },
+            { name: "Tríceps testa", sets: 4, reps: "8–10", highlight: true },
+            { name: "Tríceps corda", sets: 3, reps: "12–15" },
+            { name: "Oblíquo cabo em pé", sets: 4, reps: "15–20" },
+            { name: "Abdominal infra elevação de pernas", sets: 4, reps: "15–20" },
+        ],
+    },
+    {
+        id: "dom", label: "DOM", full: "Domingo", type: "rest", typeLabel: "OFF TOTAL",
+        objective: "Recuperação completa. Dorme, come e deixa o corpo trabalhar.",
+        rest: true,
+        restItems: ["Descanso total", "Sem treino de força", "Mobilidade leve opcional"],
+    },
+];
+const TYPE_STYLES = {
+    upper: { tag: { background: "#431407", color: "#fb923c", border: "1px solid #7c2d12" } },
+    legs: { tag: { background: "#3b0764", color: "#c084fc", border: "1px solid #581c87" } },
+    spec: { tag: { background: "#422006", color: "#facc15", border: "1px solid #713f12" } },
+    rest: { tag: { background: "#18181b", color: "#71717a", border: "1px solid #3f3f46" } },
+};
+const TAG_BASE_STYLE = { display: "inline-block", fontSize: 12, fontWeight: 700, letterSpacing: 2, textTransform: "uppercase", padding: "4px 8px", borderRadius: 4, marginTop: 8 };
+function todayIndex() {
+    return [6, 0, 1, 2, 3, 4, 5][new Date().getDay()];
+}
+function useLocalStorage(key, initial) {
+    const [val, setVal] = useState(() => {
+        try {
+            const s = localStorage.getItem(key);
+            return s ? JSON.parse(s) : initial;
+        }
+        catch (_a) {
+            return initial;
+        }
+    });
+    const set = (v) => { setVal(v); try {
+        localStorage.setItem(key, JSON.stringify(v));
+    }
+    catch (_a) { } };
+    return [val, set];
+}
+function TimerBanner({ remaining, exerciseName, onCancel }) {
+    if (remaining === null)
+        return null;
+    const m = String(Math.floor(remaining / 60)).padStart(2, "0");
+    const s = String(remaining % 60).padStart(2, "0");
+    const warn = remaining <= 10;
+    const done = remaining <= 0;
+    return (React.createElement("div", { style: { position: "fixed", bottom: 0, left: 0, right: 0, zIndex: 50,
+            display: "flex", alignItems: "center", justifyContent: "space-between",
+            padding: "14px 20px", background: "#141414", borderTop: "2px solid #e8ff00",
+            maxWidth: 640, margin: "0 auto" } },
+        React.createElement("div", null,
+            React.createElement("div", { style: { fontFamily: "monospace", fontWeight: 900, fontSize: 38, lineHeight: 1,
+                    color: done ? "#ff4d00" : warn ? "#ff8800" : "#e8ff00", letterSpacing: -1 } }, done ? "GO!" : `${m}:${s}`),
+            React.createElement("div", { style: { fontSize: 12, color: "#666" } },
+                "Descanso \u2014 ",
+                React.createElement("span", { style: { color: "#ccc" } }, exerciseName))),
+        React.createElement("button", { onClick: onCancel, style: { background: "#1c1c1c", border: "1px solid #333",
+                borderRadius: 8, color: "#888", fontSize: 13, fontWeight: 600,
+                padding: "10px 16px", cursor: "pointer" } }, "\u2715 Cancelar")));
+}
+function SetRow({ setIdx, reps, data, onChange }) {
+    return (React.createElement("div", { style: { background: "#1c1c1c", border: "1px solid #2a2a2a", borderRadius: 8, padding: "10px 12px" } },
+        React.createElement("div", { style: { fontSize: 11, color: "#555", letterSpacing: 1, textTransform: "uppercase", marginBottom: 6 } },
+            "S\u00E9rie ",
+            setIdx + 1),
+        React.createElement("div", { style: { display: "flex", gap: 6, alignItems: "center" } },
+            React.createElement("input", { type: "number", inputMode: "decimal", placeholder: "kg", value: data.w || "", onChange: e => onChange("w", e.target.value), style: { width: 50, background: "#0a0a0a", border: "1px solid #2a2a2a", borderRadius: 5,
+                    color: "#f0f0f0", fontWeight: 700, fontSize: 16, padding: "5px 8px", textAlign: "center", outline: "none" } }),
+            React.createElement("span", { style: { color: "#555", fontSize: 12 } }, "\u00D7"),
+            React.createElement("input", { type: "number", inputMode: "numeric", placeholder: reps, value: data.r || "", onChange: e => onChange("r", e.target.value), style: { width: 50, background: "#0a0a0a", border: "1px solid #2a2a2a", borderRadius: 5,
+                    color: "#f0f0f0", fontWeight: 700, fontSize: 16, padding: "5px 8px", textAlign: "center", outline: "none" } })),
+        React.createElement("div", { style: { display: "flex", justifyContent: "space-between", fontSize: 10, color: "#444", marginTop: 4 } },
+            React.createElement("span", null, "kg"),
+            React.createElement("span", null, "reps"))));
+}
+function ExerciseCard({ ex, exIdx, exKey, done, onToggle, seriesData, onSeriesChange, onStartTimer }) {
+    const [open, setOpen] = useState(false);
+    const PRESETS = [60, 90, 120, 180];
+    return (React.createElement("div", { style: {
+            background: done ? "#0d1f0a" : "#141414",
+            border: `1px solid ${done ? "#2d5a27" : ex.highlight && !done ? "#4a3a00" : "#2a2a2a"}`,
+            borderRadius: 10, overflow: "hidden", transition: "border-color 0.2s",
+        } },
+        React.createElement("div", { style: { display: "flex", alignItems: "center", padding: "14px 16px", gap: 14, cursor: "pointer" }, onClick: () => setOpen(o => !o) },
+            React.createElement("button", { onClick: e => { e.stopPropagation(); onToggle(); }, style: { width: 28, height: 28, flexShrink: 0, borderRadius: "50%",
+                    border: done ? "2px solid #7dff6b" : "2px solid #2a2a2a",
+                    background: done ? "#2d5a27" : "transparent",
+                    color: done ? "#7dff6b" : "transparent",
+                    cursor: "pointer", fontSize: 13, display: "flex", alignItems: "center", justifyContent: "center" } }, "\u2713"),
+            React.createElement("div", { style: { flex: 1, minWidth: 0 } },
+                React.createElement("div", { style: { fontWeight: 600, fontSize: 15,
+                        color: done ? "#7dff6b" : ex.highlight ? "#ffcc66" : "#f0f0f0",
+                        textDecoration: done ? "line-through" : "none", textDecorationColor: "#4a7a44",
+                        whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" } }, ex.name),
+                React.createElement("div", { style: { display: "flex", alignItems: "center", gap: 8, marginTop: 3 } },
+                    React.createElement("span", { style: { fontSize: 12, color: "#555" } },
+                        ex.sets,
+                        " s\u00E9ries \u00D7 ",
+                        ex.reps),
+                    ex.highlight && !done && (React.createElement("span", { style: { fontSize: 10, fontWeight: 700, letterSpacing: 1, textTransform: "uppercase",
+                            padding: "2px 6px", borderRadius: 3, background: "#ffcc6622",
+                            color: "#ffcc66", border: "1px solid #ffcc6644" } }, "FOCO")))),
+            React.createElement("span", { style: { color: "#555", fontSize: 16, flexShrink: 0,
+                    transition: "transform 0.2s", transform: open ? "rotate(180deg)" : "none" } }, "\u25BE")),
+        open && (React.createElement("div", { style: { borderTop: "1px solid #2a2a2a", padding: "14px 16px" } },
+            React.createElement("div", { style: { display: "grid", gridTemplateColumns: "repeat(auto-fill,minmax(130px,1fr))", gap: 8, marginBottom: 14 } }, Array.from({ length: ex.sets }).map((_, s) => (React.createElement(SetRow, { key: s, setIdx: s, reps: ex.reps, data: seriesData[s] || {}, onChange: (type, val) => onSeriesChange(exIdx, s, type, val) })))),
+            React.createElement("div", { style: { display: "flex", alignItems: "center", gap: 10, flexWrap: "wrap" } },
+                React.createElement("span", { style: { fontSize: 12, color: "#666" } }, "\u23F1 Descanso:"),
+                PRESETS.map(p => (React.createElement("button", { key: p, onClick: () => onStartTimer(p, ex.name), style: { background: "#1c1c1c", border: "1px solid #2a2a2a", borderRadius: 6,
+                        color: "#f0f0f0", fontSize: 13, fontWeight: 700, padding: "6px 12px", cursor: "pointer" } },
+                    p,
+                    "s"))))))));
+}
+function DayView({ day, doneState, onToggle, seriesData, onSeriesChange, onStartTimer, onReset }) {
+    var _a, _b;
+    const doneArr = doneState[day.id] || [];
+    const total = ((_a = day.exercises) === null || _a === void 0 ? void 0 : _a.length) || 0;
+    const done = doneArr.length;
+    const pct = total ? (done / total) * 100 : 0;
+    const complete = done === total && total > 0;
+    const typeStyle = TYPE_STYLES[day.type] || TYPE_STYLES.rest;
+    const hasHighlight = (_b = day.exercises) === null || _b === void 0 ? void 0 : _b.some(e => e.highlight);
+    if (day.rest) {
+        return (React.createElement("div", null,
+            React.createElement("div", { style: { marginBottom: 20 } },
+                React.createElement("div", { style: { fontWeight: 900, fontSize: 38, lineHeight: 1, textTransform: "uppercase" } }, day.full),
+                React.createElement("span", { style: { ...TAG_BASE_STYLE, ...typeStyle.tag } }, day.typeLabel),
+                React.createElement("div", { style: { color: "#666", fontSize: 14, marginTop: 10, borderLeft: "2px solid #2a2a2a", paddingLeft: 12 } }, day.objective)),
+            React.createElement("div", { style: { textAlign: "center", padding: "40px 20px" } },
+                React.createElement("div", { style: { fontSize: 56, marginBottom: 16 } }, "\uD83D\uDECC"),
+                React.createElement("div", { style: { fontWeight: 900, fontSize: 32, textTransform: "uppercase", color: "#444", marginBottom: 8 } }, day.typeLabel),
+                React.createElement("div", { style: { background: "#141414", border: "1px solid #2a2a2a", borderRadius: 12, padding: 20, maxWidth: 320, margin: "24px auto 0", textAlign: "left" } },
+                    React.createElement("div", { style: { fontSize: 11, letterSpacing: 2, color: "#555", textTransform: "uppercase", marginBottom: 14 } }, "Tarefas do dia"),
+                    day.restItems.map((item, i) => (React.createElement("div", { key: i, style: { display: "flex", alignItems: "center", gap: 12, padding: "10px 0",
+                            borderBottom: i < day.restItems.length - 1 ? "1px solid #1e1e1e" : "none", fontSize: 14, color: "#ccc" } },
+                        React.createElement("div", { style: { width: 6, height: 6, background: "#333", borderRadius: 3, flexShrink: 0 } }),
+                        item)))))));
+    }
+    return (React.createElement("div", null,
+        React.createElement("div", { style: { marginBottom: 20 } },
+            React.createElement("div", { style: { fontWeight: 900, fontSize: 38, lineHeight: 1, textTransform: "uppercase" } }, day.full),
+            React.createElement("span", { style: { ...TAG_BASE_STYLE, ...typeStyle.tag } }, day.typeLabel),
+            React.createElement("div", { style: { color: "#666", fontSize: 14, marginTop: 10, borderLeft: "2px solid #2a2a2a", paddingLeft: 12 } }, day.objective)),
+        complete && (React.createElement("div", { style: { background: "linear-gradient(135deg,#1a3a12,#0d2008)", border: "1px solid #3a7a30",
+                borderRadius: 12, padding: 20, textAlign: "center", marginBottom: 20 } },
+            React.createElement("div", { style: { fontSize: 32 } }, "\uD83C\uDFC6"),
+            React.createElement("div", { style: { fontWeight: 900, fontSize: 22, color: "#7dff6b", marginTop: 8 } }, "Treino Conclu\u00EDdo!"),
+            React.createElement("div", { style: { color: "#5a9a52", fontSize: 14, marginTop: 4 } }, "Todos os exerc\u00EDcios feitos. Vai recuperar."))),
+        React.createElement("div", { style: { background: "#141414", border: "1px solid #2a2a2a", borderRadius: 10, padding: "14px 16px", marginBottom: 20 } },
+            React.createElement("div", { style: { display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 10 } },
+                React.createElement("span", { style: { fontSize: 13, color: "#666", fontWeight: 500 } }, "PROGRESSO DE HOJE"),
+                React.createElement("span", { style: { fontWeight: 700, fontSize: 18 } },
+                    React.createElement("span", { style: { color: "#e8ff00" } }, done),
+                    "/",
+                    total)),
+            React.createElement("div", { style: { height: 6, background: "#2a2a2a", borderRadius: 3, overflow: "hidden" } },
+                React.createElement("div", { style: { height: "100%", background: "#e8ff00", borderRadius: 3, width: `${pct}%`, transition: "width 0.4s" } }))),
+        hasHighlight && (React.createElement("div", { style: { display: "flex", alignItems: "center", gap: 8, marginBottom: 14, fontSize: 12, color: "#555" } },
+            React.createElement("div", { style: { width: 8, height: 8, background: "#ffcc66", borderRadius: 2 } }),
+            "Exerc\u00EDcio principal \u2014 foco do dia")),
+        React.createElement("div", { style: { display: "flex", flexDirection: "column", gap: 8 } }, day.exercises.map((ex, i) => {
+            var _a;
+            return (React.createElement(ExerciseCard, { key: i, ex: ex, exIdx: i, exKey: day.id, done: doneArr.includes(i), onToggle: () => onToggle(day.id, i), seriesData: ((_a = seriesData[day.id]) === null || _a === void 0 ? void 0 : _a[i]) || {}, onSeriesChange: onSeriesChange, onStartTimer: onStartTimer }));
+        })),
+        React.createElement("button", { onClick: () => { if (confirm("Resetar o treino de hoje?"))
+                onReset(day.id); }, style: { display: "block", width: "100%", marginTop: 24, background: "transparent",
+                border: "1px solid #2a2a2a", borderRadius: 8, color: "#555", fontSize: 13,
+                fontWeight: 600, padding: 12, cursor: "pointer" } }, "\u21BA Resetar treino")));
+}
+function App() {
+    const todayIdx = todayIndex();
+    const [activeDay, setActiveDay] = useState(todayIdx);
+    const [doneState, setDoneState] = useLocalStorage("tc-ul-done-v1", {});
+    const [seriesData, setSeriesData] = useLocalStorage("tc-ul-series-v1", {});
+    const [timerRemaining, setTimerRemaining] = useState(null);
+    const [timerName, setTimerName] = useState("");
+    const timerRef = useRef(null);
+    const toggleDone = (dayId, exIdx) => {
+        setDoneState(prev => {
+            const arr = [...(prev[dayId] || [])];
+            const i = arr.indexOf(exIdx);
+            if (i === -1)
+                arr.push(exIdx);
+            else
+                arr.splice(i, 1);
+            return Object.assign(Object.assign({}, prev), { [dayId]: arr });
+        });
+    };
+    const handleSeriesChange = (exIdx, setIdx, type, val) => {
+        const dayId = DAYS[activeDay].id;
+        setSeriesData(prev => {
+            const day = Object.assign({}, (prev[dayId] || {}));
+            const ex = Object.assign({}, (day[exIdx] || {}));
+            const s = Object.assign({}, (ex[setIdx] || {}));
+            s[type] = val;
+            ex[setIdx] = s;
+            day[exIdx] = ex;
+            return Object.assign(Object.assign({}, prev), { [dayId]: day });
+        });
+    };
+    const resetDay = (dayId) => {
+        setDoneState(prev => (Object.assign(Object.assign({}, prev), { [dayId]: [] })));
+    };
+    const startTimer = (seconds, name) => {
+        if (timerRef.current)
+            clearInterval(timerRef.current);
+        setTimerRemaining(seconds);
+        setTimerName(name);
+        timerRef.current = setInterval(() => {
+            setTimerRemaining(r => {
+                if (r <= 1) {
+                    clearInterval(timerRef.current);
+                    if (navigator.vibrate)
+                        navigator.vibrate([200, 100, 200]);
+                    setTimeout(() => setTimerRemaining(null), 2000);
+                    return 0;
+                }
+                return r - 1;
+            });
+        }, 1000);
+    };
+    const cancelTimer = () => {
+        if (timerRef.current)
+            clearInterval(timerRef.current);
+        setTimerRemaining(null);
+    };
+    const day = DAYS[activeDay];
+    return (React.createElement("div", { style: { background: "#0a0a0a", minHeight: "100vh", color: "#f0f0f0", fontFamily: "system-ui, sans-serif" } },
+        React.createElement("div", { style: { background: "#141414", borderBottom: "1px solid #2a2a2a",
+                padding: "14px 20px 0", position: "sticky", top: 0, zIndex: 100 } },
+            React.createElement("div", { style: { display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 14 } },
+                React.createElement("div", { style: { fontWeight: 900, fontSize: 20, textTransform: "uppercase", letterSpacing: 1 } },
+                    "Treino ",
+                    React.createElement("span", { style: { color: "#e8ff00" } }, "Cristiano")),
+                React.createElement("div", { style: { background: "#e8ff00", color: "#000", fontWeight: 700, fontSize: 10,
+                        letterSpacing: 1.5, textTransform: "uppercase", padding: "4px 10px", borderRadius: 4 } },
+                    "HOJE: ",
+                    DAYS[todayIdx].typeLabel.split("—")[0].trim())),
+            React.createElement("div", { style: { display: "flex", gap: 2, overflowX: "auto", scrollbarWidth: "none" } }, DAYS.map((d, i) => (React.createElement("button", { key: d.id, onClick: () => setActiveDay(i), style: { flexShrink: 0, padding: "10px 14px", fontWeight: 700, fontSize: 13,
+                    letterSpacing: 0.5, textTransform: "uppercase", background: "transparent",
+                    border: "none", cursor: "pointer", whiteSpace: "nowrap",
+                    borderBottom: activeDay === i ? "3px solid #e8ff00" : "3px solid transparent",
+                    color: activeDay === i ? "#e8ff00" : d.rest ? "#444" : "#666",
+                    transition: "all 0.15s" } },
+                d.label,
+                i === todayIdx ? " ·" : ""))))),
+        React.createElement("div", { style: { maxWidth: 640, margin: "0 auto", padding: "20px 16px 140px" } },
+            React.createElement(DayView, { key: day.id, day: day, doneState: doneState, onToggle: toggleDone, seriesData: seriesData, onSeriesChange: handleSeriesChange, onStartTimer: startTimer, onReset: resetDay })),
+        React.createElement(TimerBanner, { remaining: timerRemaining, exerciseName: timerName, onCancel: cancelTimer })));
+}
+const root = ReactDOM.createRoot(document.getElementById("root"));
+root.render(React.createElement(App, null));
+
+</script>
+</body>
+</html>
